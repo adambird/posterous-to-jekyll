@@ -16,6 +16,7 @@ class PosterousToJekyll
   def convert(source_file, output_file)
     doc = Nokogiri::XML(source_file)
     write_headers doc, output_file
+    write_content doc, output_file
   end
 
   # writes headers, eg
@@ -36,6 +37,10 @@ class PosterousToJekyll
     items << "author: #{@options[:author]}"
     items << "categories: [#{source_doc.css("category[domain='tag']").collect { |n| n.text }.join(",")}]"
     items << "---"
-    output_file.write("#{items.join("\r\n")}\r\n")    
+    output_file.write("#{items.join("\r\n")}\r\n\r\n")    
+  end
+
+  def write_content(source_doc, output_file)
+    output_file.write(source_doc.at_xpath("//encoded", 'content' => 'posterous_content').text)
   end
 end

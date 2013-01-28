@@ -27,13 +27,13 @@ class PosterousToJekyll
   # author: Adam
   # categories: ['Cycling Training Tips']
   # ---
-
   def write_headers(source_doc, output_file)
     items = ["---"]
     items << "layout: #{@options[:layout]}"
     items << "title: \"#{source_doc.at_css("title").inner_text}\""
     items << "comments: #{@options[:comments]}"
     items << "author: #{@options[:author]}"
+    items << "categories: [#{source_doc.css("category[domain='tag']").collect { |n| n.text }.join(",")}]"
     items << "---"
     output_file.write(items.join("\r\n"))    
   end

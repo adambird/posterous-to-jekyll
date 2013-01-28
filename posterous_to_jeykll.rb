@@ -2,6 +2,13 @@ require 'nokogiri'
 
 class PosterousToJekyll
 
+  def namespaces
+    {
+      'content' => 'http://purl.org/rss/1.0/modules/content/',
+      'excerpt' => 'http://wordpress.org/export/1.0/excerpt/'
+    }
+  end 
+
   def initialize(options={})
     @options = options
     @options[:author] = "Adam" unless options[:author]
@@ -11,12 +18,17 @@ class PosterousToJekyll
 
   # Public - takes a File object and writes a jekyll compliant copy 
   # 
-  # source_file     - File open on a Posterous backup XML file
+  # source          - String containing posterous backup xml
   # output_file     - File open to accept 
-  def convert(source_file, output_file)
-    doc = Nokogiri::XML(source_file)
-    write_headers doc, output_file
-    write_content doc, output_file
+  def convert(source, output_file)
+    doc = Nokogiri::XML::Document.new
+    parsing_node = Nokogiri::XML::Node.new "posterous_to_jekyll", doc
+    namespaces.each_pair do |k, v| parsing_node.add_namespace(k, v) end
+
+    item = parsing_node.parse(source)
+
+    write_headers item, output_file
+    write_content item, output_file
   end
 
   # writes headers, eg
@@ -32,6 +44,7 @@ class PosterousToJekyll
     items = ["---"]
     items << "layout: #{@options[:layout]}"
     items << "title: \"#{source_doc.at_css("title").text}\""
+    items << "description: \"#{source_doc.at_css("excerpt|encoded", namespaces).text}\""
     items << "date: #{source_doc.at_css("pubDate").text}"
     items << "comments: #{@options[:comments]}"
     items << "author: #{@options[:author]}"
@@ -41,6 +54,8 @@ class PosterousToJekyll
   end
 
   def write_content(source_doc, output_file)
-    output_file.write(source_doc.at_xpath("//encoded", 'content' => 'posterous_content').text)
+    # if node = source_doc.at_css("content|encoded")
+    output_file.write(source_doc.at_css("content|encoded", namespaces).text)
   end
+
 end

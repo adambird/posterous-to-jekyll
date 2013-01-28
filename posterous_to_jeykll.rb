@@ -14,21 +14,33 @@ class PosterousToJekyll
     @options[:author] = "Adam" unless options[:author]
     @options[:comments] = true if options[:comments].nil?
     @options[:layout] = "post" unless options[:layout]
+    @options[:root] = "http://adambird.com/" unless options[:root]
   end
 
   # Public - takes a File object and writes a jekyll compliant copy 
   # 
   # source          - String containing posterous backup xml
-  # output_file     - File open to accept 
-  def convert(source, output_file)
+  # output_path     - String to output path 
+  def convert(source, output_path)
     doc = Nokogiri::XML::Document.new
     parsing_node = Nokogiri::XML::Node.new "posterous_to_jekyll", doc
     namespaces.each_pair do |k, v| parsing_node.add_namespace(k, v) end
 
     item = parsing_node.parse(source)
 
-    write_headers item, output_file
-    write_content item, output_file
+    generate_file item, output_path do |output_file|
+      write_headers item, output_file
+      write_content item, output_file
+    end
+  end
+
+  def generate_file(doc, output_path, &block)
+    dir_name = doc.at_css("link").text.scan(/[\w\d-]+$/).first
+    path = File.join(output_path, dir_name)
+    Dir.mkdir(path) unless Dir.exists?(path)
+    File.open(File.join(path, "index.html"), "w") do |file|
+      yield file
+    end
   end
 
   # writes headers, eg

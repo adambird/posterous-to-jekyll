@@ -1,0 +1,27 @@
+---
+layout: post
+title: "Delayed_job Syck woes when deploying to Heroku Cedar"
+description: "This caused me a bit of heartache and I found little to help via the usual channels. I'd upgraded a Rails 2 app that used Delayed_Job to Rails 3 and was deploying the Heroku Cedar stack. Jobs were being queued but would fail immediately when tryin..."
+date: Tue Jun 26 04:11:22 -0700 2012
+comments: true
+author: Adam
+categories: [dev,rails]
+---
+
+<p>This caused me a bit of heartache and I found little to help via the usual channels.</p>
+<p>I'd upgraded a Rails 2 app that used Delayed_Job to Rails 3 and was deploying the Heroku Cedar stack. Jobs were being queued but would fail immediately when trying to deserialise with</p>
+<div class="CodeRay">
+  <div class="code"><pre>uninitialized constant Syck::Syck</pre></div>
+</div>
+
+<p>when trying to parse and initialise the handler. Irritatingly the worker logs were showing the jobs as successful.</p>
+<p>After messing around with trying to explicitly set the YAML parser in <code>config/boot.rb</code> I found the solution.</p>
+<p><code>Syck</code> isn't available on the Heroku Cedar stack so you have to include the <code>Psych</code> gem.</p>
+<div class="CodeRay">
+  <div class="code"><pre>gem 'pysch'</pre></div>
+</div>
+
+<p>I then ran this on the console to resubmit the jobs and all was good</p>
+<div class="CodeRay">
+  <div class="code"><pre>Delayed::Job.all.each do |job| job.invoke_job ; job.destroy end</pre></div>
+</div>
